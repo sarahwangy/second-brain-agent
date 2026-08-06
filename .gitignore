@@ -1,0 +1,68 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+*.key
+credentials.json
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Testing / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Project data / artifacts
+*.log
+data/
+*.db
+*.sqlite3
+
+# RAG vector store — derived, rebuildable LanceDB artifact; never committed
+.rag-index/
+
+# Claude Code — keep settings.json tracked, ignore personal/session files
+.claude/settings.local.json
+.claude/STATE.md
+
+# Vault activity log — personal; keep the directory, ignore its contents
+.claude/log/*
+!.claude/log/.gitkeep
+log/*
+!log/.gitkeep
+
+# Notion import — temporary staging dir for bulk migration; never committed
+.import-staging/
+
+# Obsidian — per-vault config is machine-specific; don't impose it on cloners
+.obsidian/
+
+# Vault sources — original files (PDFs etc.); kept locally + vault-synced, not in git
+Sources/*
+!Sources/.gitkeep
