@@ -51,11 +51,14 @@ data/
 .claude/settings.local.json
 .claude/STATE.md
 
-# Vault activity log — personal; keep the directory, ignore its contents
-.claude/log/*
-!.claude/log/.gitkeep
+# Vault activity log — tracked in git per log-schema.md (audit trail alongside commits)
 log/*
 !log/.gitkeep
+
+# Obsidian App-generated scratch files at vault root (daily notes, empty canvas/base)
+/*.canvas
+/*.base
+/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].md
 
 # Notion import — temporary staging dir for bulk migration; never committed
 .import-staging/
