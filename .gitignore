@@ -51,7 +51,10 @@ data/
 .claude/settings.local.json
 .claude/STATE.md
 
-# Vault activity log — tracked in git per log-schema.md (audit trail alongside commits)
+# Vault activity log — moved to note-ignore/ because `reason` fields summarize
+# personal note content; keep the directory, ignore its contents
+.claude/log/*
+!.claude/log/.gitkeep
 log/*
 !log/.gitkeep
 
