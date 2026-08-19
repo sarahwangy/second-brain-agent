@@ -69,3 +69,6 @@ log/*
 # Vault sources — original files (PDFs etc.); kept locally + vault-synced, not in git
 Sources/*
 !Sources/.gitkeep
+
+# Personal captured notes — kept locally only, never pushed to the public repo
+note-ignore/
