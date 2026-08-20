@@ -10,6 +10,7 @@
 - [计算/容器](#计算容器)
 - [网络](#网络)
 - [管理/自动化](#管理自动化)
+- [迁移与传输工具（Snowball / DataSync / DMS）](#迁移与传输工具snowball--datasync--dms)
 
 ---
 
@@ -90,3 +91,13 @@ def lambda_handler(event, context):
 3. 配置VPC/安全组
 4. 用控制台内置Query Editor（或DBeaver等客户端）连接
 5. 写SQL建表，常见方式用`COPY`命令从S3批量导入数据，再跑分析查询
+
+## 迁移与传输工具（Snowball / DataSync / DMS）
+
+| 服务 | 传输方式 | 是否寄硬件 | 是否写代码 | 适合场景 |
+|---|---|---|---|---|
+| Snowball | 物理设备离线搬运 | 需要（AWS寄给你，你再寄回） | 不需要，操作客户端软件拷贝文件 | 数据量巨大（TB~PB级）、网络条件差 |
+| DataSync | 网络在线同步（装Agent） | 不需要 | 不需要，控制台配置任务 | 持续/周期性文件同步 |
+| DMS（Database Migration Service） | 网络在线迁移 | 不需要 | 不需要，控制台配置迁移任务，支持CDC持续复制 | 数据库迁移，要求少停机 |
+
+记忆点：**"Snow"开头的服务**（Snowball、Snowmobile、Snowcone）才涉及实体硬件寄送，其他迁移类服务都是纯软件/网络方案。（从 [[CLF-C02 核心服务讲解问答]] 合并过来，Gardener Fission建议——内容偏"怎么用"，跟这篇笔记定位更match）

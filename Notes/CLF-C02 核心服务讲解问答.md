@@ -13,7 +13,6 @@
 - [计算相关](#计算相关)
 - [监控与审计三件套](#监控与审计三件套)
 - [事件驱动/集成服务](#事件驱动集成服务)
-- [迁移与传输工具（Snowball / DataSync / DMS）](#迁移与传输工具snowball--datasync--dms)
 - [是否都需要会写代码](#是否都需要会写代码)
 
 ---
@@ -128,83 +127,7 @@
 
 ## 事件驱动/集成服务
 
-**消息与解耦服务对比（SQS / SNS / EventBridge）**：
-
-| 服务 | 模式 | 核心用途 |
-|---|---|---|
-| SQS | 队列 | 消息暂存，一条消息只被一个消费者处理一次 |
-| SNS | 发布/订阅 | 消息广播，推给所有订阅者，不存储 |
-| EventBridge | 事件总线 | 基于事件内容做规则路由，可对接AWS原生事件和第三方SaaS |
-
-**为什么用消息队列/发布订阅而不是直接调用API**：
-- **解耦**：下单服务不需要知道下游服务的存在，新增下游只需订阅
-- **削峰填谷**：瞬间大量请求涌入时，SQS先接住，消费者按能力慢慢处理
-- **容错**：下游服务临时挂掉，消息还在队列里等着，不会丢失
-
-常见组合（**Fanout模式**）：下单服务发消息到SNS Topic → 广播给多个SQS队列 → 各下游服务各自订阅消费，互不阻塞。
-
-**EventBridge 相比 SNS 的优势**：可以根据事件内容（比如`status: cancelled`）做条件路由，只把符合条件的事件转发给对应目标；SNS做不到这种按内容分流，只能无差别广播给所有订阅者。
-
-**Amazon EventBridge**（原名Event Bus）— 事件总线服务。发布者（比如S3）往总线上发事件，订阅者（Lambda等）根据规则被自动通知，两边完全解耦、互不知道对方存在。
-
-**类比修正**：不是webhook（webhook是点对点、A硬编码B的地址），更接近 **Kafka的producer/consumer模型**（发布-订阅、解耦思想一致）。但跟Kafka有关键区别：
-| | Kafka | EventBridge |
-|---|---|---|
-| 订阅方式 | 按topic名字订阅 | 按**事件内容做模式匹配**（pattern matching），更像"内容路由" |
-| 消息保留 | 持久化存储，consumer可回放历史、控制offset | **不保留历史**，事件发生即时推送，没有回放机制 |
-| 定位 | 通用消息队列/流处理基础设施 | AWS服务事件的"胶水"，没有Kafka的海量吞吐/流处理定位 |
-
-一句话：发布-订阅解耦思想一样，但Kafka是"持久化消息日志"，EventBridge是"实时事件路由器，过了就没了"。需要"消息不能丢、能重新消费"的场景该用SQS或AWS MSK（Kafka托管版），不该用EventBridge。
-
-**AWS AppSync** — 托管GraphQL API服务，把多个数据源（数据库、Lambda、REST API）包装成统一查询入口，前端一次请求能同时拿到分散在不同数据源的数据。
-
-**Schema 和 Resolver 是不是都要写**：不是二选一，是叠加关系——**Schema 一定要写**（没有例外，定义了API有哪些查询/数据类型，是必须的）；**Resolver 看情况**：简单场景（直接对接DynamoDB/Aurora Serverless）AppSync向导自动生成（用VTL模板语言，基本不用手写）；复杂场景（调第三方API、拼接多数据源、自定义业务逻辑）就得自己写Lambda函数当resolver。
-
-**代码示例**：
-
-Schema（声明"有一个Order类型，客户端可以用getOrder查询"）：
-```graphql
-type Order {
-  id: ID!
-  customerName: String
-  items: [String]
-  status: String
-}
-
-type Query {
-  getOrder(id: ID!): Order
-}
-```
-
-复杂场景的 Lambda Resolver（从DynamoDB取基础信息+调第三方API查物流状态，拼好一次性返回）：
-```python
-def handler(event, context):
-    order_id = event['arguments']['id']
-    order = get_order_from_dynamodb(order_id)
-    order['status'] = call_shipping_api(order_id)
-    return order
-```
-
-客户端调用（只发一次请求，AppSync后台自动跑上面的Resolver拼数据）：
-```graphql
-query {
-  getOrder(id: "12345") {
-    customerName
-    items
-    status
-  }
-}
-```
-
-## 迁移与传输工具（Snowball / DataSync / DMS）
-
-| 服务 | 传输方式 | 是否寄硬件 | 是否写代码 | 适合场景 |
-|---|---|---|---|---|
-| Snowball | 物理设备离线搬运 | 需要（AWS寄给你，你再寄回） | 不需要，操作客户端软件拷贝文件 | 数据量巨大（TB~PB级）、网络条件差 |
-| DataSync | 网络在线同步（装Agent） | 不需要 | 不需要，控制台配置任务 | 持续/周期性文件同步 |
-| DMS（Database Migration Service） | 网络在线迁移 | 不需要 | 不需要，控制台配置迁移任务，支持CDC持续复制 | 数据库迁移，要求少停机 |
-
-记忆点：**"Snow"开头的服务**（Snowball、Snowmobile、Snowcone）才涉及实体硬件寄送，其他迁移类服务都是纯软件/网络方案。
+SQS/SNS/EventBridge对比、Fanout模式、EventBridge vs Kafka类比纠偏、AppSync的Schema/Resolver讲解+代码示例，都拆到了 [[CLF-C02 事件驱动服务对比｜SQS-SNS-EventBridge-AppSync]]（Gardener Fission建议，这部分内容自成体系）。
 
 ## 是否都需要会写代码
 
