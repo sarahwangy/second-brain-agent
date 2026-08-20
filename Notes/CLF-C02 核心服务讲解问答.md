@@ -19,6 +19,9 @@
 
 ## 开发/CLI 工具
 
+![[Sources/ScreenShot_2026-08-20_103601_343.png]]
+*AWS Management Console 首页概览：EC2/IAM/Cloud9/S3/VPC/CloudFront/CloudFormation/RDS/Elastic Beanstalk等常用服务都能从这里的"最近访问"直接进入。*
+
 **AWS CloudShell** — 浏览器里直接用的命令行终端，登录控制台点一下图标就能用，预装了 AWS CLI 和常用工具，不用自己配置环境。例：临时跑几条 `aws s3 ls` 命令，不想在自己电脑装 CLI。
 
 **AWS CLI** — 在自己电脑终端里用命令操作 AWS 的工具，装好后配置 access key，就能用 `aws ec2 describe-instances` 代替点控制台。
@@ -35,11 +38,26 @@
 
 **AWS Account ID** — 12位数字，每个AWS账户的唯一编号。
 
+![[Sources/ScreenShot_2026-08-20_112109_365.png]]
+*AWS Account Root User：root账户权限不能被删除、不能用IAM policy限制，只能靠Organizations的SCP限制；一个账户只能有一个root。*
+
 **AWS Access Key** — 本地机器上存的凭证文件，通常在 `~/.aws/credentials`（INI格式），CLI/SDK读这个文件认证。**绝对不能提交进git或分享给别人**，泄露后别人能直接拿去用你的账户跑资源花钱。
+
+![[Sources/ScreenShot_2026-08-20_105840_248.png]]
+![[Sources/ScreenShot_2026-08-20_105915_686.png]]
+![[Sources/ScreenShot_2026-08-20_105943_789.png]]
+![[Sources/ScreenShot_2026-08-20_110025_534.png]]
+*Access Key 生成流程：IAM控制台创建 → 存入 `~/.aws/credentials`（TOML/INI格式）→ 可以用`[default]`和自定义profile名区分多套凭证 → `aws configure`命令能直接写入这个文件。*
 
 ## 基础设施即代码（IaC）
 
+![[Sources/ScreenShot_2026-08-20_104944_197.png]]
+*CFN（声明式，What you see is what you get）vs CDK（命令式，说清楚要什么剩下自动填）的对比。*
+
 **CloudFormation** — 用YAML/JSON模板描述"我要什么资源"，AWS读模板自动创建/更新/删除，不用手动点控制台。
+
+![[Sources/ScreenShot_2026-08-20_105012_543.png]]
+*一段真实的CloudFormation YAML片段：定义一个EC2实例，用`Fn::FindInMap`按Region查AMI ID，绑定安全组和子网。*
 
 **CDK（Cloud Development Kit）** — 用Python/Node.js/TypeScript等编程语言定义基础设施，实际部署分两步：
 1. **`cdk synth`**（本地）：把你写的代码**翻译成**一份CloudFormation模板文件，这步不碰AWS
@@ -53,7 +71,19 @@
 - **FaaS**：只写一个函数，看不到服务器，按调用次数计费。例：Lambda
 - **SaaS**：现成软件产品，登录直接用。例：Gmail、Zoom
 
+![[Sources/ScreenShot_2026-08-20_110236_126.png]]
+*IaaS/PaaS/SaaS 三种模式下，"客户负责"（浅色）vs "AWS负责"（深色）的分界线——分界线越往下移，AWS管得越多。*
+
+![[Sources/ScreenShot_2026-08-20_110359_857.png]]
+*用计算举例细化到 IaaS/PaaS/SaaS/FaaS 四种模式各自对应哪个AWS服务、客户具体要管什么。*
+
+![[Sources/ScreenShot_2026-08-20_110521_535.png]]
+*责任共担模型的通用判断口诀：能配置/存储的东西是"云中的安全"（你负责），配置不了的是"云本身的安全"（AWS负责）。*
+
 ## 存储与网络
+
+![[Sources/ScreenShot_2026-08-20_110926_883.png]]
+*存储服务补充：Snow Family(Snowball Edge/Snowmobile/Snowcone，物理硬件搬大数据)、AWS Backup(跨EC2/EBS/RDS/DynamoDB/EFS的统一备份管理)、CloudEndure(灾备复制)、Amazon FSx(高性能文件系统，支持Windows的SMB或Linux的Lustre协议)。*
 
 **S3** — 对象存储，存文件（图片/视频/备份/静态网站）。
 
@@ -73,6 +103,9 @@
 - **Internet Gateway** — VPC连接互联网的"门"
 - **Route Table** — 决定流量该往哪走
 
+![[Sources/ScreenShot_2026-08-20_111657_005.png]]
+*完整VPC网络架构图：Internet → IGW → Router → Route Table/NACL → Public Subnet(EC2, Security Group) / Private Subnet(RDS)，NAT负责让私有子网出网。*
+
 **Security Group vs NACL**（两层不同粒度的防火墙）：
 | | Security Group | NACL |
 |---|---|---|
@@ -81,6 +114,9 @@
 | 状态 | 有状态（Stateful，进来的流量自动放行对应的返回流量） | 无状态（Stateless，进、出要分别设置规则） |
 
 记忆：Security Group像门卫只查进（默认全部拒绝，只放行你允许的），NACL像围墙检查站，进出都查、还能主动拉黑。
+
+![[Sources/ScreenShot_2026-08-20_111726_902.png]]
+*NACL 在子网层面挡流量的示意图：可以针对具体IP设Deny规则（比如"屏蔽某个known-abuse的IP"），Security Group则是包在NACL里面、实例级别的第二道门。*
 
 **Auto Scaling + ELB**：
 - **ELB（Elastic Load Balancer）** — 把流量分发到多台EC2实例，避免单点过载
@@ -93,9 +129,21 @@
 **Aurora** — AWS自研关系型数据库，兼容MySQL/PostgreSQL协议但性能更强，是RDS家族的"高级款"。
 **Redshift** — 数据仓库，专做大规模分析查询（不是日常增删改查），有专门Query Editor直接写SQL。
 
+![[Sources/ScreenShot_2026-08-20_111350_924.png]]
+*RDS/Aurora 控制台首页：可以选"Express configuration"几秒建好预配置数据库，也可以"Full configuration"自定义各种细节。*
+
+![[Sources/ScreenShot_2026-08-20_111359_258.png]]
+*建数据库时的引擎选择界面：Aurora(MySQL/PostgreSQL兼容)、MySQL、PostgreSQL、MariaDB、Oracle、SQL Server、IBM Db2都是可选项。*
+
 ## 计算相关
 
+![[Sources/ScreenShot_2026-08-20_110137_409.png]]
+*AWS官方文档首页（以EC2为例）：每个服务的文档一般都有User Guide、Instance Types、相关特性专题指南，遇到具体细节记不清时可以直接查docs.aws.amazon.com。*
+
 **AMI（Amazon Machine Image）** — EC2的"镜像模板"，含操作系统+预装软件快照。例：配置好一台EC2打包成AMI，以后批量开一模一样的服务器直接用这个AMI，不用每台重装。
+
+![[Sources/ScreenShot_2026-08-20_110557_788.png]]
+*计算服务全家福：LightSail(EC2的简化友好版)、ECS/ECR/Fargate(容器编排+镜像仓库+无服务器运行)、EKS(托管Kubernetes)、Lambda(无服务器函数)。*
 
 **AWS Elastic Beanstalk（PaaS）** — 类比自己手动用 Nginx 部署到服务器的流程：正常手动部署要（1）开服务器（2）装Nginx做反向代理/静态文件服务（3）装应用运行时（Gunicorn/PM2等），Nginx转发请求给它（4）配置开机自启/日志/监控（5）要扩容还得自己加机器配负载均衡。**Beanstalk 把这一整套自动化了**——选平台（比如"Python"）、上传代码，Beanstalk 自动配好运行环境+负载均衡+Auto Scaling。注意：底层其实还是EC2在跑，只是这层配置/伸缩AWS帮你打理，你不直接碰。跟纯EC2的区别：EC2是"给空白虚拟机，自己装一切"（IaaS）；Beanstalk是"只管应用代码，运行环境这层AWS搭好"（PaaS）。
 
@@ -107,6 +155,18 @@
 | 覆盖范围 | 主要EC2（RDS/ElastiCache等各自有RI） | EC2+Lambda+Fargate用同一份Savings Plan覆盖 |
 
 一句话：**RI是"预定一辆具体型号的车用1年"，Savings Plans是"承诺每月至少打车花$500，不管打什么车都按这个额度算"**——后者更灵活，AWS近年更推荐用Savings Plans代替RI（除非非常确定未来1-3年实例类型/Region完全不变）。
+
+![[Sources/ScreenShot_2026-08-20_111828_309.png]]
+*EC2实例大小对比：同一个系列(t2)从small到large，vCPU/内存/价格基本按倍数往上翻，选型时先看这个规律。*
+
+![[Sources/ScreenShot_2026-08-20_111946_771.png]]
+*EC2五种付费方式总览：On-Demand(最灵活最贵)、Spot(最便宜最多省90%但可能被回收)、Reserved(承诺1/3年最多省75%)、Dedicated(独占物理硬件)。*
+
+![[Sources/ScreenShot_2026-08-20_112012_987.png]]
+*Reserved Instances 详解：折扣由Term(期限)×Class(标准/可转换)×Payment Option(预付比例)共同决定，期限越长、预付越多、灵活性越低，折扣越大。*
+
+![[Sources/ScreenShot_2026-08-20_112036_007.png]]
+*Standard RI vs Convertible RI：Standard不能换配置但能在RI Marketplace卖掉；Convertible能换实例类型/平台但不能在市场卖，只能跟AWS换。*
 
 **Amazon ECS/EKS/Fargate（为什么需要容器编排）** — 生产环境用容器要解决一堆问题：容器该放哪台机器跑、崩溃了怎么自动重启、流量变大怎么扩容、更新怎么不停机——这些统称"容器编排（orchestration）"，ECS和EKS都是干这个的。
 - **ECS**：AWS自己发明的专有编排系统，只能在AWS用，不开源

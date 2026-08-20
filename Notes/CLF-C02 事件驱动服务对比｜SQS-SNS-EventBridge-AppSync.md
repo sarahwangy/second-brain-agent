@@ -41,9 +41,15 @@
 
 一句话：发布-订阅解耦思想一样，但Kafka是"持久化消息日志"，EventBridge是"实时事件路由器，过了就没了"。需要"消息不能丢、能重新消费"的场景该用SQS或AWS MSK（Kafka托管版），不该用EventBridge。
 
+![[Sources/ScreenShot_2026-08-20_112128_114.png]]
+*Event Bus 官方示意图：Event从source进入总线，按不同Rule匹配后路由给不同Target；EventBridge是这个模型的无服务器实现，之前叫Amazon CloudWatch Events。*
+
 ## AWS AppSync
 
 **AWS AppSync** — 托管GraphQL API服务，把多个数据源（数据库、Lambda、REST API）包装成统一查询入口，前端一次请求能同时拿到分散在不同数据源的数据。
+
+![[Sources/ScreenShot_2026-08-20_112243_031.png]]
+*AppSync 官方配置项：API类型分GraphQL API(单数据源)和Merged API(多个团队各自API合并成一个)；支持的数据源包括DynamoDB/OpenSearch/Lambda/HTTP/EventBridge/RDS；缓存分None/全量/按resolver三档，但开缓存就不是serverless了（要选实例类型）。*
 
 **Schema 和 Resolver 是不是都要写**：不是二选一，是叠加关系——**Schema 一定要写**（没有例外，定义了API有哪些查询/数据类型，是必须的）；**Resolver 看情况**：简单场景（直接对接DynamoDB/Aurora Serverless）AppSync向导自动生成（用VTL模板语言，基本不用手写）；复杂场景（调第三方API、拼接多数据源、自定义业务逻辑）就得自己写Lambda函数当resolver。
 
