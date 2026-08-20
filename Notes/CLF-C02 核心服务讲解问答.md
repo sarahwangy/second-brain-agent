@@ -68,7 +68,17 @@
 ## 计算相关
 
 **AMI（Amazon Machine Image）** — EC2的"镜像模板"，含操作系统+预装软件快照。例：配置好一台EC2打包成AMI，以后批量开一模一样的服务器直接用这个AMI，不用每台重装。
-**Savings Plans** — 承诺未来1/3年花固定金额换取比On-Demand更便宜的价格，适用EC2/Lambda/Fargate等。
+
+**AWS Elastic Beanstalk（PaaS）** — 类比自己手动用 Nginx 部署到服务器的流程：正常手动部署要（1）开服务器（2）装Nginx做反向代理/静态文件服务（3）装应用运行时（Gunicorn/PM2等），Nginx转发请求给它（4）配置开机自启/日志/监控（5）要扩容还得自己加机器配负载均衡。**Beanstalk 把这一整套自动化了**——选平台（比如"Python"）、上传代码，Beanstalk 自动配好运行环境+负载均衡+Auto Scaling。注意：底层其实还是EC2在跑，只是这层配置/伸缩AWS帮你打理，你不直接碰。跟纯EC2的区别：EC2是"给空白虚拟机，自己装一切"（IaaS）；Beanstalk是"只管应用代码，运行环境这层AWS搭好"（PaaS）。
+
+**Reserved Instances vs Savings Plans（都是"承诺花钱换折扣"，但灵活度不同）**：
+| | Reserved Instances | Savings Plans |
+|---|---|---|
+| 承诺方式 | 承诺**具体实例类型+Region**（如"1年内用m5.large在悉尼"） | 承诺**每小时花多少钱**（如"1年内每小时$10"），不锁定实例类型 |
+| 灵活度 | 低——换实例类型/Region通常要重新买 | 高——花费总额匹配承诺额度即可，中途换实例类型/Region/甚至换Lambda/Fargate折扣照样生效 |
+| 覆盖范围 | 主要EC2（RDS/ElastiCache等各自有RI） | EC2+Lambda+Fargate用同一份Savings Plan覆盖 |
+
+一句话：**RI是"预定一辆具体型号的车用1年"，Savings Plans是"承诺每月至少打车花$500，不管打什么车都按这个额度算"**——后者更灵活，AWS近年更推荐用Savings Plans代替RI（除非非常确定未来1-3年实例类型/Region完全不变）。
 
 **Amazon ECS/EKS/Fargate（为什么需要容器编排）** — 生产环境用容器要解决一堆问题：容器该放哪台机器跑、崩溃了怎么自动重启、流量变大怎么扩容、更新怎么不停机——这些统称"容器编排（orchestration）"，ECS和EKS都是干这个的。
 - **ECS**：AWS自己发明的专有编排系统，只能在AWS用，不开源
@@ -90,7 +100,45 @@
 
 一句话：发布-订阅解耦思想一样，但Kafka是"持久化消息日志"，EventBridge是"实时事件路由器，过了就没了"。需要"消息不能丢、能重新消费"的场景该用SQS或AWS MSK（Kafka托管版），不该用EventBridge。
 
-**AWS AppSync** — 托管GraphQL API服务，把多个数据源（数据库、Lambda、REST API）包装成统一查询入口，前端一次请求能同时拿到分散在不同数据源的数据。**是否需要写代码**：Schema部分是用GraphQL schema语言手写的声明式定义（类似写建表SQL）；Resolver（字段怎么去数据源取数据）简单场景（比如直接接DynamoDB）AppSync能自动生成，复杂业务逻辑就得自己写Lambda函数。
+**AWS AppSync** — 托管GraphQL API服务，把多个数据源（数据库、Lambda、REST API）包装成统一查询入口，前端一次请求能同时拿到分散在不同数据源的数据。
+
+**Schema 和 Resolver 是不是都要写**：不是二选一，是叠加关系——**Schema 一定要写**（没有例外，定义了API有哪些查询/数据类型，是必须的）；**Resolver 看情况**：简单场景（直接对接DynamoDB/Aurora Serverless）AppSync向导自动生成（用VTL模板语言，基本不用手写）；复杂场景（调第三方API、拼接多数据源、自定义业务逻辑）就得自己写Lambda函数当resolver。
+
+**代码示例**：
+
+Schema（声明"有一个Order类型，客户端可以用getOrder查询"）：
+```graphql
+type Order {
+  id: ID!
+  customerName: String
+  items: [String]
+  status: String
+}
+
+type Query {
+  getOrder(id: ID!): Order
+}
+```
+
+复杂场景的 Lambda Resolver（从DynamoDB取基础信息+调第三方API查物流状态，拼好一次性返回）：
+```python
+def handler(event, context):
+    order_id = event['arguments']['id']
+    order = get_order_from_dynamodb(order_id)
+    order['status'] = call_shipping_api(order_id)
+    return order
+```
+
+客户端调用（只发一次请求，AppSync后台自动跑上面的Resolver拼数据）：
+```graphql
+query {
+  getOrder(id: "12345") {
+    customerName
+    items
+    status
+  }
+}
+```
 
 ## 是否都需要会写代码
 
