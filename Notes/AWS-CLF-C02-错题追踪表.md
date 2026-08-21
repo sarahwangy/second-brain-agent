@@ -26,6 +26,8 @@
 | Topic 1 | 634 | EC2购买方式选择（持续1年+不能中断+最省钱） | D | A | 选了On-Demand（最贵、适合不确定用量场景），没意识到"持续1年+不中断"是Reserved Instances的典型场景；且没注意"最省钱"这个限定词要选预付比例最高的All Upfront | [ ] | 0 |
 | Topic 1 | 703 | AWS Application Discovery Service（迁移前摸底调研） | B | A | 选了Application Migration Service（真正做迁移动作），没注意题干说"还不想复制workload到AWS"——这时候该用Discovery Service先做调研，不是Migration Service | [ ] | 0 |
 | Topic 1 | 707 | AWS Global Accelerator（全球应用性能优化） | C | A | 选了ElastiCache（解决数据库查询慢的问题），没意识到题干问的是"全球用户访问ALB后面的公开应用"这种网络路径/延迟问题，该用Global Accelerator做全球网络加速，跟数据库缓存无关 | [ ] | 0 |
+| Topic 1 | 621 | ELB vs Auto Scaling 职责划分 | A | B | 选了"ELB自动扩容资源"，把ELB和Auto Scaling的职责搞混——ELB只负责把已有流量分发到已有实例，不负责创建新实例/自动扩容，那是Auto Scaling的活 | [ ] | 0 |
+| Topic 1 | 705 | 云计算六大优势之Elasticity（测试新应用场景） | D | B | 选了"管理所有云相关维护任务"（这其实是反云计算优势的描述），没抓住"测试新应用"对应的是弹性伸缩+不做长期承诺（Elasticity），而不是维护管理 | [ ] | 0 |
 
 ## 学习进度追踪
 
@@ -33,6 +35,7 @@
 |---|---|---|---|
 | 08.20 | 690, 668, 658, 676, 619, 634 | 3/6（50%） | 第一次刷题，从题库后半段（600-719）随机抽题；HPC实例类型选错（混淆计算密集vs存储密集）、EC2购买方式选错（没意识到长期稳定负载该选Reserved Instances）；CAF/Well-Architected相关概念题答对 |
 | 08.20 | 641, 709, 703, 686, 707 | 3/5（60%） | 继续刷题；Cost Explorer/CAF Business perspective（有争议题，官方答案A但社区50/50）都对；703第一次遇到"Discovery vs Migration Service"这类题，把两者搞混选错，但紧接着686又碰到几乎同一个考点，这次答对了，说明当场纠正生效；707错在把"全球网络加速"需求误判成"数据库缓存"需求 |
+| 08.21 | 652, 621, 557, 705 | 2/4（50%） | On-Demand/Reserved Instances基础场景题都答对；621错在把ELB和Auto Scaling的职责搞混（ELB不负责自动扩容）；705错在没抓住"测试新应用"对应Elasticity这个云计算优势，选了不相关的"维护管理"选项 |
 
 ## 补充练习题（来自互动组件，正确性未回传，仅供参考复盘）
 
