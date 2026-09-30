@@ -13,6 +13,7 @@
 - [计算相关](#计算相关)
 - [监控与审计三件套](#监控与审计三件套)
 - [事件驱动/集成服务](#事件驱动集成服务)
+- [网络安全与存储补充问答](#网络安全与存储补充问答)
 - [是否都需要会写代码](#是否都需要会写代码)
 
 ---
@@ -188,6 +189,29 @@
 ## 事件驱动/集成服务
 
 SQS/SNS/EventBridge对比、Fanout模式、EventBridge vs Kafka类比纠偏、AppSync的Schema/Resolver讲解+代码示例，都拆到了 [[CLF-C02 事件驱动服务对比｜SQS-SNS-EventBridge-AppSync]]（Gardener Fission建议，这部分内容自成体系）。
+
+## 网络安全与存储补充问答
+
+**NACL 和 Security Group 的流量经过顺序** — 外部请求到达EC2必须依次通过两道关卡：①NACL（子网大门）→②Security Group（实例小门）→EC2。如果①拒绝，流量直接丢弃，Security Group根本看不到这个请求。只有①放行，才轮到②决定放不放行。常见误判：NACL规则编号顺序配错被别的规则先匹配、入站/出站方向配反、NACL挂在子网上而不是EC2上。
+
+**端口号是什么** — 相当于服务器（一栋楼）里的"房间号"：80=HTTP、443=HTTPS、22=SSH、3306=MySQL。
+
+**"Security Group只配入站，出站也能响应"的考点** — Security Group是有状态的（Stateful）：入站规则放行某个连接后，会记住这次连接，对应返回流量自动放行，不需要额外配出站规则。NACL无状态，进出流量必须分别配置。
+
+**Redshift 具体什么场景用** — 核心区分：RDS/DynamoDB处理OLTP（业务系统实时读写），Redshift处理OLAP（海量历史数据分析）。典型场景：BI报表、数据仓库汇总多系统数据分析、配合QuickSight/Tableau做可视化、海量日志分析。底层原因：RDS是行式存储适合取出/更新整条记录，Redshift是列式存储适合只扫描某几列做统计，效率高得多。很多公司RDS和Redshift同时用：RDS撑实时业务，Redshift定期同步数据做分析报表。
+
+**AWS Auto Scaling 是不是独立服务** — 两个层级：各服务早自带独立伸缩机制（EC2 Auto Scaling、DynamoDB Auto Scaling、ECS Service Auto Scaling、Aurora Auto Scaling）；"AWS Auto Scaling"（大写完整名字）是后来推出的统一管理面板，本身不直接执行伸缩，而是调用各服务自己的机制。CLF-C02考试基本只考"EC2 Auto Scaling + ELB"这个最常见组合，不深挖两层区别。
+
+**S3 + CloudFront 加速的搭建步骤**：
+1. 静态资源上传到S3桶作为源站(Origin)
+2. CloudFront创建Distribution，指定源站为该S3桶
+3. 配置Origin Access Control(OAC)，让S3只信任来自该CloudFront分发的请求，防止绕过CloudFront直接访问S3 URL
+4. 设置缓存行为(Cache Behavior)，配置哪些内容缓存多久(TTL)
+5. （可选）绑定自定义域名，用ACM免费申请SSL证书走HTTPS
+6. 部署，等待配置同步到全球边缘节点（几分钟到二十分钟）
+7. 验证：对比直接访问S3 URL和访问CloudFront域名的延迟差异
+
+**S3 文件能被分享访问，是不是因为配了 CloudFront** — 不是，两件不同的事：S3文件本身能被访问靠的是**权限设置**（桶/对象公开可读，或用**预签名URL**——带过期时间的临时链接，桶保持私有也能用，请求直接打到S3跟CloudFront无关）；CloudFront解决的是**访问速度**问题，让全球用户从最近边缘节点获取缓存副本。类比：只用S3分享像"文件放公司总部档案室，谁看都要跑一趟总部"；S3+CloudFront像"全球开分店，提前把副本送到离你最近的分店"。
 
 ## 是否都需要会写代码
 
